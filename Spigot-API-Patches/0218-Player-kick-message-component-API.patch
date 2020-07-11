@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aleksander Jagiello <themolkapl@gmail.com>
+Date: Sat, 11 Jul 2020 22:42:57 +0200
+Subject: [PATCH] Player kick message component API
+
+
+diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
+index 2eb3121386e3bc5ccdd74726a7c4b5f832ec5aea..a06b4da2f90a049ae56bd453bb6fa6ad8077632e 100644
+--- a/src/main/java/org/bukkit/entity/Player.java
++++ b/src/main/java/org/bukkit/entity/Player.java
+@@ -155,6 +155,22 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+      */
+     public void kickPlayer(@Nullable String message);
+ 
++    // Paper start
++    /**
++     * Kicks player with custom kick component message
++     *
++     * @param message kick message
++     */
++    public void kickPlayer(@NotNull net.md_5.bungee.api.chat.BaseComponent message);
++
++    /**
++     * Kicks player an array of kick components with custom message
++     *
++     * @param message kick message
++     */
++    public void kickPlayer(@NotNull net.md_5.bungee.api.chat.BaseComponent... message);
++    // Paper end
++
+     /**
+      * Says a message (or runs a command).
+      *
+diff --git a/src/main/java/org/bukkit/event/player/PlayerKickEvent.java b/src/main/java/org/bukkit/event/player/PlayerKickEvent.java
+index 14c337f15fc804f52e52cb0a185aad38d89303a8..a669dc26c0cfa3647a80091e43b063be6b5d2a73 100644
+--- a/src/main/java/org/bukkit/event/player/PlayerKickEvent.java
++++ b/src/main/java/org/bukkit/event/player/PlayerKickEvent.java
+@@ -10,16 +10,55 @@ import org.jetbrains.annotations.NotNull;
+  */
+ public class PlayerKickEvent extends PlayerEvent implements Cancellable {
+     private static final HandlerList handlers = new HandlerList();
+-    private String leaveMessage;
+-    private String kickReason;
++    private net.md_5.bungee.api.chat.BaseComponent[] leaveMessage; // Paper
++    private net.md_5.bungee.api.chat.BaseComponent[] kickReason; // Paper
+     private Boolean cancel;
+ 
+     public PlayerKickEvent(@NotNull final Player playerKicked, @NotNull final String kickReason, @NotNull final String leaveMessage) {
+         super(playerKicked);
++        this.setReason(kickReason); // Paper
++        this.setLeaveMessage(leaveMessage); // Paper
++        this.cancel = false;
++    }
++
++    // Paper start - kickReason and leaveMessage components
++    public PlayerKickEvent(@NotNull final Player playerKicked, @NotNull final net.md_5.bungee.api.chat.BaseComponent[] kickReason, @NotNull final net.md_5.bungee.api.chat.BaseComponent[] leaveMessage) {
++        super(playerKicked);
++        this.setReasonComponents(kickReason);
++        this.setLeaveMessageComponents(leaveMessage);
++        this.cancel = false;
++    }
++
++    @NotNull
++    public net.md_5.bungee.api.chat.BaseComponent[] getReasonComponents() {
++        return this.kickReason;
++    }
++
++    public void setReasonComponent(@NotNull net.md_5.bungee.api.chat.BaseComponent kickReason) {
++        com.google.common.base.Preconditions.checkNotNull(kickReason, "kickReason");
++        this.setReasonComponents(new net.md_5.bungee.api.chat.BaseComponent[] {kickReason});
++    }
++
++    public void setReasonComponents(@NotNull net.md_5.bungee.api.chat.BaseComponent[] kickReason) {
++        com.google.common.base.Preconditions.checkNotNull(kickReason, "kickReason");
+         this.kickReason = kickReason;
++    }
++
++    @NotNull
++    public net.md_5.bungee.api.chat.BaseComponent[] getLeaveMessageComponents() {
++        return this.leaveMessage;
++    }
++
++    public void setLeaveMessageComponent(@NotNull net.md_5.bungee.api.chat.BaseComponent leaveMessage) {
++        com.google.common.base.Preconditions.checkNotNull(leaveMessage, "leaveMessage");
++        this.setLeaveMessageComponents(new net.md_5.bungee.api.chat.BaseComponent[] {leaveMessage});
++    }
++
++    public void setLeaveMessageComponents(@NotNull net.md_5.bungee.api.chat.BaseComponent[] leaveMessage) {
++        com.google.common.base.Preconditions.checkNotNull(leaveMessage, "leaveMessage");
+         this.leaveMessage = leaveMessage;
+-        this.cancel = false;
+     }
++    // Paper end
+ 
+     /**
+      * Gets the reason why the player is getting kicked
+@@ -28,7 +67,7 @@ public class PlayerKickEvent extends PlayerEvent implements Cancellable {
+      */
+     @NotNull
+     public String getReason() {
+-        return kickReason;
++        return net.md_5.bungee.api.chat.BaseComponent.toLegacyText(kickReason); // Paper
+     }
+ 
+     /**
+@@ -38,7 +77,7 @@ public class PlayerKickEvent extends PlayerEvent implements Cancellable {
+      */
+     @NotNull
+     public String getLeaveMessage() {
+-        return leaveMessage;
++        return net.md_5.bungee.api.chat.BaseComponent.toLegacyText(leaveMessage); // Paper
+     }
+ 
+     @Override
+@@ -57,7 +96,7 @@ public class PlayerKickEvent extends PlayerEvent implements Cancellable {
+      * @param kickReason kick reason
+      */
+     public void setReason(@NotNull String kickReason) {
+-        this.kickReason = kickReason;
++        this.kickReason = net.md_5.bungee.api.chat.TextComponent.fromLegacyText(kickReason); // Paper
+     }
+ 
+     /**
+@@ -66,7 +105,7 @@ public class PlayerKickEvent extends PlayerEvent implements Cancellable {
+      * @param leaveMessage leave message
+      */
+     public void setLeaveMessage(@NotNull String leaveMessage) {
+-        this.leaveMessage = leaveMessage;
++        this.leaveMessage = net.md_5.bungee.api.chat.TextComponent.fromLegacyText(leaveMessage); // Paper
+     }
+ 
+     @NotNull
